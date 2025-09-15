@@ -1,0 +1,64 @@
+from fastapi import FastAPI
+from transformers import pipeline
+from app.api.v1 import user, email, payment, order, blog, destinations, tours, bookings
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.database import Base, engine, SessionLocal
+from app.models.user import Users
+from app.models.order import Orders
+from app.models.blogs import Blogs
+from app.models.destinations import Destinations
+from app.models.tours import Tours
+from app.models.bookings import Bookings
+from app.models.passengers import Passengers
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+from pydantic import BaseModel, EmailStr
+
+
+nlp = pipeline("sentiment-analysis", framework="pt")
+
+app = FastAPI()
+
+async def get_db():
+    async with SessionLocal() as session:
+        yield session
+
+# Khởi tạo DB (chạy 1 lần lúc start)
+@app.on_event("startup")
+async def startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+origins = [
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
+    "http://localhost:4000",
+    "http://127.0.0.1:4000",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(user.router, prefix="/api/v1/user", tags=["Users"])
+app.include_router(email.router, prefix="/api/v1/email", tags=["Email"])
+app.include_router(payment.router, prefix="/api/v1/payment", tags=["Payment"])
+app.include_router(order.router, prefix="/api/v1/order", tags=["Order"])
+app.include_router(blog.router, prefix="/api/v1/blog", tags=["Blog"])
+app.include_router(destinations.router, prefix="/api/v1/destinations", tags=["Destinations"])
+app.include_router(tours.router, prefix="/api/v1/tours", tags=["Tours"])
+app.include_router(bookings.router, prefix="/api/v1/bookings", tags=["Bookings"])
+
+@app.get("/")
+def root():
+    return {"msg": "AI backend is running"}
+
+@app.post("/predict/")
+def predict(text: str):
+    result = nlp(text)
+    return {"input": text, "prediction": result}
