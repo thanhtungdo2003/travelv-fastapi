@@ -20,7 +20,9 @@ async def get_db():
 @router.post("/create")
 async def tour_create(
     data: TourCreation, 
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    has_role: bool = Depends(auth.has_role("ADMIN"))
+
 ):
     try:
         result = await tours_service.create(data=data,
@@ -59,6 +61,29 @@ async def tour_create(
 async def get_tours(data: get_schema.GetSchema, db: AsyncSession = Depends(get_db)):
     try:
         result = await tours_service.get_tours(filters=data, db=db)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    
+
+@router.post("/get-disableds")
+async def get_tours(data: get_schema.GetSchema, db: AsyncSession = Depends(get_db), hasrole: bool = Depends(auth.has_role("ADMIN"))):
+    try:
+        result = await tours_service.get_disable_tours(filters=data, db=db)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    
+@router.post("/get-by-destination/{destination_id}")
+async def get_by_destination(destination_id: str, filters: get_schema.ToursGetSchema, db: AsyncSession = Depends(get_db)):
+    try:
+        result = await tours_service.get_tours_by_destination_id(destination_id=destination_id, filters=filters, db=db)
         return result
     except Exception as e:
         raise HTTPException(

@@ -30,14 +30,19 @@ class Bookings(Base):
     pickup_lng = Column(Float)
     diparture_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
+    total_amount = Column(Integer)
     user = relationship("Users", back_populates="bookings")
     tour = relationship("Tours", back_populates="bookings")
-    passengers = relationship("Passengers", back_populates="booking", cascade="all, delete-orphan")
+    passengers = relationship("Passengers", back_populates="booking")
 
 class PassengerCreation(BaseModel):
     fullname: str
     age_type: str
-    bookings_id: str
+    birth_day: datetime
+
+class PassengerPublic(BaseModel):
+    fullname: str
+    age_type: str
     birth_day: datetime
 
 class BookingsCreation(BaseModel):
@@ -55,3 +60,17 @@ class BookingsCreation(BaseModel):
     passengers: list[PassengerCreation]
 
 
+class BookingsPublic(BaseModel):
+    fullname: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    price: Optional[int] = None
+    user_id: Optional[str] = None
+    tour_id: Optional[str] = None
+    province: Optional[str] = None
+    ward: Optional[str] = None
+    specific_address: Optional[str] = None
+    pickup_lat: Optional[float] = None
+    pickup_lng: Optional[float] = None
+    diparture_at: Optional[datetime] = None
+    passengers: list[PassengerPublic]

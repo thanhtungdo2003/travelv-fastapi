@@ -20,7 +20,9 @@ async def get_db():
 @router.post("/create")
 async def destination_create(
     data: DestinationCreation, 
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    has_role: bool = Depends(auth.has_role("ADMIN"))
+
 ):
     try:
         result = await destinations_service.create(
@@ -43,7 +45,9 @@ async def destination_create(
 async def destination_create(
     id: str,
     data: DestinationUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    has_role: bool = Depends(auth.has_role("ADMIN"))
+
 ):
     try:
         result = await destinations_service.update(
@@ -64,6 +68,17 @@ async def destination_create(
 async def get_destinations(data: get_schema.GetSchema, db: AsyncSession = Depends(get_db)):
     try:
         result = await destinations_service.get_destinations(filters=data, db=db)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    
+@router.post("/get-disableds")
+async def get_destinations(data: get_schema.GetSchema, db: AsyncSession = Depends(get_db), has_role: bool = Depends(auth.has_role('ADMIN'))):
+    try:
+        result = await destinations_service.get_disable_destinations(filters=data, db=db)
         return result
     except Exception as e:
         raise HTTPException(

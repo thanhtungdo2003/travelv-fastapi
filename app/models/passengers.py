@@ -17,10 +17,10 @@ class PassengerAgeEnum(str, Enum):
 class Passengers(Base):
     __tablename__ = "passengers"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    fullname = Column(String, unique=True, nullable=False)
+    fullname = Column(String, nullable=False)
     age_type = Column(SQLEnum(PassengerAgeEnum, name="passenger-age-type"), nullable=False, default=PassengerAgeEnum.ADULT)
     bookings_id = Column(UUID(as_uuid=True), ForeignKey("bookings.id"))
     birth_day = Column(DateTime, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
-    booking = relationship("Bookings", back_populates="passenger")
+    booking = relationship("Bookings", back_populates="passengers")
 

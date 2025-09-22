@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from transformers import pipeline
-from app.api.v1 import user, email, payment, order, blog, destinations, tours, bookings
+from app.api.v1 import user, email, payment, order, blog, destinations, tours, bookings, statisticals
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import Base, engine, SessionLocal
 from app.models.user import Users
@@ -53,6 +53,7 @@ app.include_router(blog.router, prefix="/api/v1/blog", tags=["Blog"])
 app.include_router(destinations.router, prefix="/api/v1/destinations", tags=["Destinations"])
 app.include_router(tours.router, prefix="/api/v1/tours", tags=["Tours"])
 app.include_router(bookings.router, prefix="/api/v1/bookings", tags=["Bookings"])
+app.include_router(statisticals.router, prefix="/api/v1/statisticals", tags=["Statisticals"])
 
 @app.get("/")
 def root():

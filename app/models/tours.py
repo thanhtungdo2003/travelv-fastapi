@@ -16,6 +16,11 @@ class VehiclesEnum(str, Enum):
 class TourTagsEnum(str, Enum):
     SAVEMONEY = 'SAVE MONNEY'
 
+class TourStatusEnum(str, Enum):
+    DELETED = 'DELETED'
+    HIDEN = 'HIDEN'
+    DEFAULT = 'DEFAULT'
+
 
 class Tours(Base):
     __tablename__ = "tours"
@@ -24,6 +29,7 @@ class Tours(Base):
     title = Column(String, unique=True, nullable=False)
     vehicle = Column(SQLEnum(VehiclesEnum, name="vehicles"), nullable=False, default=VehiclesEnum.CAR)
     tag = Column(SQLEnum(TourTagsEnum, name="tour-tags"), nullable=False, default=TourTagsEnum.SAVEMONEY)
+    status = Column(SQLEnum(TourStatusEnum, name="tour_status"), nullable=False, default=TourStatusEnum.DEFAULT)
     price = Column(Integer, nullable=False)
     slots = Column(Integer, default=1)
     first_location = Column(String)
@@ -58,6 +64,7 @@ class TourUpdate(BaseModel):
     destination_id: Optional[str] = None
     vehicle: Optional[str] = None
     tag: Optional[str] = None
+    status: Optional[str] = None
     price: Optional[int] = None
     slots: Optional[int] = None
     first_location: Optional[str] = None

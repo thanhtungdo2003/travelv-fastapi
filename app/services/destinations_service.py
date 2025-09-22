@@ -13,6 +13,7 @@ from app.utils import auth
 from sqlalchemy.exc import IntegrityError
 import string
 import secrets
+import math
 
 async def create(
         title: string,
@@ -48,18 +49,11 @@ async def update(id:str, updateItem: destinations.DestinationUpdate,
         if not item:
             raise HTTPException(status_code=404, detail="Destination not found")
         
-        if updateItem.title:
-            item.title = updateItem.title
-        if updateItem.description:
-            item.description = updateItem.description
-        if updateItem.thumbnailURL:
-            item.thumbnailURL = updateItem.thumbnailURL
-        if updateItem.lat:
-            item.lat = updateItem.lat
-        if updateItem.lng:
-            item.lng = updateItem.lng
-        if updateItem.views:
-            item.views = updateItem.views
+        update_data = updateItem.model_dump(exclude_unset=True)
+
+        for key, value in update_data.items():
+            setattr(item, key, value)
+
 
         await db.commit()
         await db.refresh(item)
@@ -73,31 +67,65 @@ async def update(id:str, updateItem: destinations.DestinationUpdate,
 
 
 async def get_destinations(filters: get_schema.GetSchema, db: AsyncSession):
-    stmt = select(destinations.Destinations)
+    stmt = select(destinations.Destinations).where(destinations.Destinations.status == destinations.DestinationEnum.DEFAULT)
 
     if filters.id:
         stmt = stmt.where(destinations.Destinations.id == filters.id)
 
     if filters.searchKeyword:
-        keyword = f"%{filters.searchKeyword}%"
+        keyword = f"%{filters.searchKeyword.strip()}%"
         stmt = stmt.where(
             (destinations.Destinations.title.ilike(keyword)) |
             (destinations.Destinations.description.ilike(keyword))
         )
 
-    # Phân trang
     page = filters.page if filters.page and filters.page > 0 else 1
-    row = filters.row if filters.row and filters.row > 0 else 10
+    row = min(filters.row if filters.row and filters.row > 0 else 10, 100)
     offset = (page - 1) * row
-
-    total = (await db.execute(select(func.count()).select_from(destinations.Destinations))).scalar()
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total = (await db.execute(count_stmt)).scalar()
 
     result = await db.execute(stmt.offset(offset).limit(row))
     data = result.scalars().all()
+    max_page = math.ceil(total / row) if row > 0 else 1
 
     return {
         "total": total,
         "page": page,
         "row": row,
+        "max_page": max_page,
+        "data": data
+    }
+
+
+
+async def get_disable_destinations(filters: get_schema.GetSchema, db: AsyncSession):
+    stmt = select(destinations.Destinations).where(destinations.Destinations.status == destinations.DestinationEnum.DELETED)
+
+    if filters.id:
+        stmt = stmt.where(destinations.Destinations.id == filters.id)
+
+    if filters.searchKeyword:
+        keyword = f"%{filters.searchKeyword.strip()}%"
+        stmt = stmt.where(
+            (destinations.Destinations.title.ilike(keyword)) |
+            (destinations.Destinations.description.ilike(keyword))
+        )
+
+    page = filters.page if filters.page and filters.page > 0 else 1
+    row = min(filters.row if filters.row and filters.row > 0 else 10, 100)
+    offset = (page - 1) * row
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total = (await db.execute(count_stmt)).scalar()
+
+    result = await db.execute(stmt.offset(offset).limit(row))
+    data = result.scalars().all()
+    max_page = math.ceil(total / row) if row > 0 else 1
+
+    return {
+        "total": total,
+        "page": page,
+        "row": row,
+        "max_page": max_page,
         "data": data
     }

@@ -33,3 +33,51 @@ async def booking_create(
             detail=str(e)
         )
     
+@router.get("/get/{id}")
+async def get_booking(
+    id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        result = await bookings_service.get_by_id(id=id, db=db)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    
+@router.post("/user")
+async def get_bookings_by_user(
+    filters: get_schema.GetSchema,
+    user_id: str = Depends(auth.verify_token_user),
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        result = await bookings_service.get_by_user_id(id=user_id,filters=filters, db=db)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+@router.post("/get")
+async def get_bookings(
+    filters: get_schema.GetSchema,
+    db: AsyncSession = Depends(get_db),
+    has_role: bool = Depends(auth.has_role("ADMIN"))
+):
+    if not has_role:
+        raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Not permisstion!"
+    )
+    result = await bookings_service.get(filters=filters, db=db)
+    return result
+
+
+@router.post("/paid/{pay_token}")
+async def paid_booking(pay_token: str, db: AsyncSession = Depends(get_db)):
+    res = await bookings_service.paid(pay_token=pay_token, db=db)
+    return res

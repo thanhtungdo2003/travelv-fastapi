@@ -14,6 +14,8 @@ from sqlalchemy.exc import IntegrityError
 import string
 import secrets
 from sqlalchemy.orm import selectinload
+import math
+
 
 async def create(data: tours.TourCreation,
         db: AsyncSession
@@ -55,11 +57,9 @@ async def update(id:str, updateItem: tours.TourUpdate,
         raise
     
 
-    
-
 
 async def get_tours(filters: get_schema.GetSchema, db: AsyncSession):
-    stmt = select(tours.Tours).options(selectinload(tours.Tours.destination))
+    stmt = select(tours.Tours).options(selectinload(tours.Tours.destination)).where(tours.Tours.status == tours.TourStatusEnum.DEFAULT)
 
     if filters.id:
         stmt = stmt.where(tours.Tours.id == filters.id)
@@ -71,19 +71,90 @@ async def get_tours(filters: get_schema.GetSchema, db: AsyncSession):
             (tours.Tours.description.ilike(keyword))
         )
 
-    page = max(filters.page or 1, 1)
-    row = max(filters.row or 10, 1)
+    page = filters.page if filters.page and filters.page > 0 else 1
+    row = min(filters.row if filters.row and filters.row > 0 else 10, 100)
     offset = (page - 1) * row
-
-    total_result = await db.execute(stmt.with_only_columns(func.count()).order_by(None))
-    total = total_result.scalar()
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total = (await db.execute(count_stmt)).scalar()
 
     result = await db.execute(stmt.offset(offset).limit(row))
-    data = result.scalars().unique().all()
+    data = result.scalars().all()
+
+    max_page = math.ceil(total / row) if row > 0 else 1
+
 
     return {
         "total": total,
         "page": page,
+        "max_page": max_page,
+        "row": row,
+        "data": data
+    }
+
+async def get_disable_tours(filters: get_schema.GetSchema, db: AsyncSession):
+    stmt = select(tours.Tours).options(selectinload(tours.Tours.destination)).where(tours.Tours.status == tours.TourStatusEnum.DELETED)
+
+    if filters.id:
+        stmt = stmt.where(tours.Tours.id == filters.id)
+
+    if filters.searchKeyword:
+        keyword = f"%{filters.searchKeyword}%"
+        stmt = stmt.where(
+            (tours.Tours.title.ilike(keyword)) |
+            (tours.Tours.description.ilike(keyword))
+        )
+
+    page = filters.page if filters.page and filters.page > 0 else 1
+    row = min(filters.row if filters.row and filters.row > 0 else 10, 100)
+    offset = (page - 1) * row
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total = (await db.execute(count_stmt)).scalar()
+
+    result = await db.execute(stmt.offset(offset).limit(row))
+    data = result.scalars().all()
+
+    max_page = math.ceil(total / row) if row > 0 else 1
+
+
+    return {
+        "total": total,
+        "page": page,
+        "max_page": max_page,
+        "row": row,
+        "data": data
+    }
+
+
+async def get_tours_by_destination_id(destination_id: int, filters: get_schema.ToursGetSchema, db: AsyncSession):
+    base_stmt = select(tours.Tours).where(tours.Tours.destination_id == destination_id).where(
+        tours.Tours.price.between(filters.priceFrom, filters.priceTo)
+    ).where(tours.Tours.status == tours.TourStatusEnum.DEFAULT)
+
+    if filters.id:
+        base_stmt = base_stmt.where(tours.Tours.id == filters.id)
+
+    if filters.searchKeyword:
+        keyword = f"%{filters.searchKeyword}%"
+        base_stmt = base_stmt.where(
+            (tours.Tours.title.ilike(keyword)) |
+            (tours.Tours.description.ilike(keyword))
+        )
+
+    page = filters.page if filters.page and filters.page > 0 else 1
+    row = min(filters.row if filters.row and filters.row > 0 else 10, 100)
+    offset = (page - 1) * row
+    count_stmt = select(func.count()).select_from(base_stmt.subquery())
+    total = (await db.execute(count_stmt)).scalar()
+    stmt = base_stmt.options(selectinload(tours.Tours.destination))
+    result = await db.execute(stmt.offset(offset).limit(row))
+    data = result.unique().scalars().all()
+
+    max_page = math.ceil(total / row) if row > 0 else 1
+
+    return {
+        "total": total,
+        "page": page,
+        "max_page": max_page,
         "row": row,
         "data": data
     }

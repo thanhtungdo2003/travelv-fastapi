@@ -1,16 +1,21 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import Base, engine, SessionLocal
 from sqlalchemy.future import select
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from fastapi import Depends, HTTPException, status
 from datetime import datetime, timedelta
-from app.models.user import Users, UserSignin, UserUpdate
+from app.models.user import Users, UserSignin, UserUpdate, UserUpdateByAdmin
 from passlib.context import CryptContext
 from app.utils import auth
 from sqlalchemy.exc import IntegrityError
 import string
 import secrets
+from app.schemas import get_schema
+from sqlalchemy.orm import selectinload, undefer
+import math
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -37,7 +42,8 @@ async def create(
         await db.commit()
         await db.refresh(new_user)
         payload = {
-            'user_id': str(new_user.id)
+            'user_id': str(new_user.id),
+            'role': new_user.role
         }
         token = auth.create_access_token(data=payload, expires_delta=timedelta(days=15))
 
@@ -56,7 +62,9 @@ async def login(
         db: AsyncSession):
     """
     """
-    result = await db.execute(select(Users).where(Users.email == email))
+    result = await db.execute(
+        select(Users).options(undefer(Users.password)).where(Users.email == email)
+    )    
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found!")
@@ -64,7 +72,8 @@ async def login(
         raise HTTPException(status_code=400, detail="Incorrect email or password")
 
     payload = {
-        'user_id': str(user.id)
+        'user_id': str(user.id),
+        'role': user.role
     }
     token = auth.create_access_token(data=payload, expires_delta=timedelta(days=15))
 
@@ -79,10 +88,30 @@ async def get_user_by_email(email:str, db: AsyncSession) -> UserSignin:
     user = result.scalars().first()
     if not user:
         return None
-    del user.password
     del user.id
     return user
+async def update_user_by_admin(user_id:str, data: UserUpdateByAdmin, db: AsyncSession):
+    result = await db.execute(select(Users).where(Users.id == user_id))
+    user = result.scalar_one_or_none()
 
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    if data.email:
+        user.email = data.email
+    if data.username:
+        user.username = data.username
+    if data.password:
+        user.password = hash_password(data.password)
+    if data.role:
+        user.role = data.role
+    await db.commit()
+    await db.refresh(user)
+    del user.password
+    return user   
+ 
 async def update_user(user_id:str, data: UserUpdate, db: AsyncSession):
     result = await db.execute(select(Users).where(Users.id == user_id))
     user = result.scalar_one_or_none()
@@ -98,7 +127,8 @@ async def update_user(user_id:str, data: UserUpdate, db: AsyncSession):
         user.username = data.username
     if data.password:
         user.password = hash_password(data.password)
-
+    if data.role:
+        user.role = data.role
     await db.commit()
     await db.refresh(user)
     del user.password
@@ -115,3 +145,35 @@ def generate_random_password(length: int = 12) -> str:
     chars = string.ascii_letters + string.digits + string.punctuation
     password = ''.join(secrets.choice(chars) for _ in range(length))
     return password
+
+
+async def get_all_users(filters: get_schema.GetSchema, db: AsyncSession):
+    base_stmt = select(Users)
+
+    if filters.id:
+        base_stmt = base_stmt.where(id == filters.id)
+
+    if filters.searchKeyword:
+        keyword = f"%{filters.searchKeyword}%"
+        base_stmt = base_stmt.where(
+            (Users.username.ilike(keyword)) |
+            (Users.email.ilike(keyword))
+        )
+
+    page = filters.page if filters.page and filters.page > 0 else 1
+    row = min(filters.row if filters.row and filters.row > 0 else 10, 100)
+    offset = (page - 1) * row
+    count_stmt = select(func.count()).select_from(base_stmt.subquery())
+    total = (await db.execute(count_stmt)).scalar()
+    result = await db.execute(base_stmt.offset(offset).limit(row))
+    data = result.unique().scalars().all()
+
+    max_page = math.ceil(total / row) if row > 0 else 1
+
+    return {
+        "total": total,
+        "page": page,
+        "max_page": max_page,
+        "row": row,
+        "data": data
+    }

@@ -7,18 +7,10 @@ from app.utils import auth, payment
 from datetime import datetime, timedelta
 
 
-def create(data: payment.PackPayload, user_id: str):
-    oid = uuid.uuid4()
-    a = 0
-    if data.pack == 'month':
-        a = 12906
-    elif data.pack == 'year':
-        a = 134597
-    elif data.pack == 'life':
-        a = 790200
+def create(booking_id: str, a: int, user_id: str):
+    oid = str(uuid.uuid4())
     token = auth.create_access_token(data={
-        "order_id": str(oid),
-        "pack" : data.pack,
+        "booking_id": booking_id,
         "amount": a,
         "user_id": user_id
     }, expires_delta=timedelta(minutes=5))
@@ -32,7 +24,7 @@ def create(data: payment.PackPayload, user_id: str):
     redirectUrl = f"http://localhost:3000/pay-success/{token}"
     ipnUrl = "https://webhook.site/b3088a6a-2d17-4f8d-a383-71389a6c600b"
     amount = a
-    orderId = str(oid)
+    orderId = oid
     requestId = str(uuid.uuid4())
     extraData = ""  # pass empty value or Encode base64 JsonString
     partnerName = "MoMo Payment"
@@ -46,10 +38,10 @@ def create(data: payment.PackPayload, user_id: str):
     # before sign HMAC SHA256 with format: accessKey=$accessKey&amount=$amount&extraData=$extraData&ipnUrl=$ipnUrl
     # &orderId=$orderId&orderInfo=$orderInfo&partnerCode=$partnerCode&redirectUrl=$redirectUrl&requestId=$requestId
     # &requestType=$requestType
-    rawSignature = "accessKey=" + accessKey + "&amount=" + str(amount) + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId \
+    rawSignature = f"accessKey=" + accessKey + "&amount=" + str(amount) + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId \
                 + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl\
                 + "&requestId=" + requestId + "&requestType=" + requestType
-
+    
     # puts raw signature
     # signature
     h = hmac.new(bytes(secretKey, 'ascii'), bytes(rawSignature, 'ascii'), hashlib.sha256)
