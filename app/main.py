@@ -12,6 +12,8 @@ from app.models.passengers import Passengers
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from pydantic import BaseModel, EmailStr
 
+import os
+import uvicorn
 
 
 app = FastAPI()
@@ -57,3 +59,6 @@ app.include_router(statisticals.router, prefix="/api/v1/statisticals", tags=["St
 def root():
     return {"msg": "AI backend is running"}
 
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=False)
