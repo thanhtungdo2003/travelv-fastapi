@@ -35,7 +35,7 @@ origins = [
     "http://127.0.0.1:4000",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://thanhtungdo2003.github.io/travelv-landingpage",
+    "https://thanhtungdo2003.github.io",
 ]
 
 app.add_middleware(
