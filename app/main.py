@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from transformers import pipeline
 from app.api.v1 import user, email, payment, order, blog, destinations, tours, bookings, statisticals
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import Base, engine, SessionLocal
@@ -14,7 +13,6 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from pydantic import BaseModel, EmailStr
 
 
-nlp = pipeline("sentiment-analysis", framework="pt")
 
 app = FastAPI()
 
@@ -59,7 +57,3 @@ app.include_router(statisticals.router, prefix="/api/v1/statisticals", tags=["St
 def root():
     return {"msg": "AI backend is running"}
 
-@app.post("/predict/")
-def predict(text: str):
-    result = nlp(text)
-    return {"input": text, "prediction": result}
