@@ -51,6 +51,12 @@ def verify_token_user(token: str = Depends(oauth2_scheme)):
 def has_role(role: str):
     def dependency(token: str = Depends(oauth2_scheme)):
         payload = verify_token(token)
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions"
+            )
+        return True
         user_role = payload.get("role")
 
         if user_role != role:
