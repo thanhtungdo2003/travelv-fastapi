@@ -23,6 +23,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 def verify_token(token: str):
     try:
+        print(token)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except JWTError:
@@ -56,7 +57,6 @@ def has_role(role: str):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not enough permissions"
             )
-        return True
         user_role = payload.get("role")
 
         if user_role != role:
