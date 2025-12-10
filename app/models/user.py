@@ -34,10 +34,12 @@ class Users(Base):
     role = Column(SQLEnum(UserRoleEnum, name="role-type"), nullable=False, default=UserRoleEnum.DEFAULT, index=True)
     password = deferred(Column(String, nullable=False))
     created_at = Column(DateTime, server_default=func.now())
+
     user_info = relationship("UserInfos", back_populates="user", uselist=False)
     orders = relationship("Orders", back_populates="user")
     blogs = relationship("Blogs", back_populates="user")
     bookings = relationship("Bookings", back_populates="user", uselist=False)
+    hotels = relationship("Hotels", back_populates="user")
 
 
 class UserInfos(Base):

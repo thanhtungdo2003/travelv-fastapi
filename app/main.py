@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.v1 import user, email, payment, order, blog, destinations, tours, bookings, statisticals
+from app.api.v1 import user, email, payment, order, blog, destinations, tours, bookings, statisticals, room, hotels
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import Base, engine, SessionLocal
 from app.models.user import Users
@@ -8,6 +8,7 @@ from app.models.blogs import Blogs
 from app.models.destinations import Destinations
 from app.models.tours import Tours
 from app.models.bookings import Bookings
+from app.models.hotelroom import BookingRooms, TourRooms, HotelRooms, Hotels
 from app.models.passengers import Passengers
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from pydantic import BaseModel, EmailStr
@@ -36,6 +37,7 @@ origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://thanhtungdo2003.github.io",
+    "*"
 ]
 
 app.add_middleware(
@@ -55,6 +57,8 @@ app.include_router(destinations.router, prefix="/api/v1/destinations", tags=["De
 app.include_router(tours.router, prefix="/api/v1/tours", tags=["Tours"])
 app.include_router(bookings.router, prefix="/api/v1/bookings", tags=["Bookings"])
 app.include_router(statisticals.router, prefix="/api/v1/statisticals", tags=["Statisticals"])
+app.include_router(room.router, prefix="/api/v1/rooms", tags=["Rooms"])
+app.include_router(hotels.router, prefix="/api/v1/hotels", tags=["Hotels"])
 
 @app.get("/")
 def root():

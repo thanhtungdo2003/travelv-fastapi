@@ -50,20 +50,42 @@ async def send_email(email: str, background_tasks: BackgroundTasks, db: AsyncSes
         subject="Alex - Verify your email",
         recipients=[email],
         body = f"""
-        <div style="width: 100%; height: 500px; display: flex; justify-content: center; align-items: center;">
-            <div style="margin: 0 auto; width: 400px; padding: 20px; border-radius: 10px; 
-                        background-color: black; justify-content: center; 
-                        align-items: center; color: white; text-align: center; border: 8px solid #CB2F30">
-                <h3 style="margin-bottom: 10px; font-size: 80px; color: #CB2F30">Alex</h3><br/>
-                <p style="margin-bottom: 20px;">Click this button to go back to Alex tools</p><br/>
-                <a href="http://localhost:3000/auth/verify-email/{auth.create_access_token(data={"name":"verify", 'email': email}, expires_delta=timedelta(minutes=15))}" 
-                style="display: inline-block; text-decoration: none; text-align: center;
-                        width: 100px; height: 40px; line-height: 40px; 
-                        color: white; background-color: #CE3435; border-radius: 3px; cursor: pointer">
-                    Verify
-                </a>
-            </div>
+        <div style="width: 100%; min-height: 500px; display: flex; justify-content: center; align-items: center; font-family: Arial, sans-serif; background-color: #f5f7fa;">
+    <div style="margin: 0 auto; max-width: 400px; padding: 30px; border-radius: 12px; 
+                background-color: white; color: #333; text-align: center; 
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+        <!-- Logo/Header -->
+        <div style="margin-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 32px; color: #2E86C1; font-weight: bold;">TravelV</h1>
+            <p style="margin: 5px 0 0 0; font-size: 14px; color: #7F8C8D;">Explore the world with us</p>
         </div>
+        
+        <!-- Content -->
+        <div style="margin-bottom: 30px;">
+            <h3 style="margin-bottom: 15px; font-size: 22px; color: #2C3E50;">Verify Your Email Address</h3>
+            <p style="margin-bottom: 10px; line-height: 1.5; color: #5D6D7E;">
+                Thank you for signing up with TravelV. To complete your registration and start exploring amazing destinations, please verify your email address by clicking the button below.
+            </p>
+        </div>
+        
+        <!-- Verification Button -->
+        <a href="http://localhost:3000/auth/verify-email/{auth.create_access_token(data={'name':'verify', 'email': email}, expires_delta=timedelta(minutes=15))}" 
+           style="display: inline-block; text-decoration: none; text-align: center;
+                  width: 180px; padding: 12px 0; 
+                  color: white; background-color: #3498DB; border-radius: 6px; 
+                  font-weight: bold; font-size: 16px; cursor: pointer;
+                  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3); transition: background-color 0.3s;">
+            Verify Email
+        </a>
+        
+        <!-- Footer -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ECF0F1;">
+            <p style="margin: 0; font-size: 12px; color: #95A5A6;">
+                If you did not create an account with TravelV, please ignore this email.
+            </p>
+        </div>
+    </div>
+</div>
         """,
 
         subtype="html"

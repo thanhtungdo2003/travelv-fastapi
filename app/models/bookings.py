@@ -23,17 +23,21 @@ class Bookings(Base):
     status = Column(SQLEnum(BookingsStatusEnum, name="bookings-status"), nullable=False, default=BookingsStatusEnum.UNPAID)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     tour_id = Column(UUID(as_uuid=True), ForeignKey("tours.id"))
+    schedule_id = Column(UUID(as_uuid=True), ForeignKey("tour_schedules.id"))
     province = Column(String, nullable=False)
     ward = Column(String, nullable=False)
     specific_address = Column(String, nullable=False)
     pickup_lat = Column(Float)
     pickup_lng = Column(Float)
-    diparture_at = Column(DateTime, nullable=False)
+    diparture_at = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     total_amount = Column(Integer)
+
     user = relationship("Users", back_populates="bookings")
     tour = relationship("Tours", back_populates="bookings")
+    schedule = relationship("TourSchedules", back_populates="bookings")
     passengers = relationship("Passengers", back_populates="booking")
+    booking_rooms = relationship("BookingRooms", back_populates="booking")
 
 class PassengerCreation(BaseModel):
     fullname: str
@@ -49,13 +53,13 @@ class BookingsCreation(BaseModel):
     fullname: str
     email: str
     phone: str
-    user_id: str
     tour_id: str
     province: str
     ward: str
     specific_address: str
     pickup_lat: Optional[float] = None
     pickup_lng: Optional[float] = None
+    selected_rooms: Optional[list] = None
     diparture_at: datetime
     passengers: list[PassengerCreation]
 

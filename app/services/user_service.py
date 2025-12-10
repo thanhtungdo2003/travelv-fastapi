@@ -83,6 +83,30 @@ async def login(
             "user_name": user.username,
             "email": user.email}
 
+    
+async def login_with_token(
+        user_id: str, 
+        db: AsyncSession):
+    """
+    """
+    result = await db.execute(
+        select(Users).where(Users.id == user_id)
+    )    
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found!")
+    payload = {
+        'user_id': str(user.id),
+        'role': user.role
+    }
+    token = auth.create_access_token(data=payload, expires_delta=timedelta(days=15))
+
+    return {"access_token": token, 
+            "token_type": "bearer",
+            "user_id": user.id,
+            "user_name": user.username,
+            "email": user.email}
+
 async def get_user_by_email(email:str, db: AsyncSession) -> UserSignin:
     result = await db.execute(select(Users).where(Users.email == email))
     user = result.scalars().first()

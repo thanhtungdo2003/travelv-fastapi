@@ -10,9 +10,9 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_DATABASE = os.getenv("DB_DATABASE")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
+#DATABASE_URL = os.getenv("DATABASE_URL")
 
-DATABASE_URL = "postgresql+asyncpg://postgres:bdsJxrNjgfgIkQVPQBXVXoFBXLtBtuqR@turntable.proxy.rlwy.net:54098/railway"
-# DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_DATABASE}"
+DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_DATABASE}"
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 

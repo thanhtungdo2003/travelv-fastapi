@@ -40,8 +40,24 @@ class Tours(Base):
     imageURLs = Column(String)
     views = Column(Integer, default=0)
     created_at = Column(DateTime, server_default=func.now())
+
+    destination = relationship("Destinations", back_populates="tours")
     destination = relationship("Destinations", back_populates="tours")
     bookings = relationship("Bookings", back_populates="tour")
+    schedules = relationship("TourSchedules", back_populates="tour", cascade="all, delete-orphan")
+    tour_rooms = relationship("TourRooms", back_populates="tour")
+
+class TourSchedules(Base):
+    __tablename__ = "tour_schedules"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tour_id = Column(UUID(as_uuid=True), ForeignKey("tours.id", ondelete="CASCADE"))
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+    available_slots = Column(Integer, nullable=False) 
+    created_at = Column(DateTime, server_default=func.now())
+
+    tour = relationship("Tours", back_populates="schedules")
+    bookings = relationship("Bookings", back_populates="schedule", cascade="all, delete-orphan")
 
 
 class TourCreation(BaseModel):
@@ -73,3 +89,15 @@ class TourUpdate(BaseModel):
     description: Optional[str] = None
     thumbnailURL: Optional[str] = None
     imageURLs: Optional[str] = None
+
+
+class ScheduleCreate(BaseModel):
+    tour_id: str
+    start_date: datetime
+    end_date: datetime
+    available_slots: int
+
+class ScheduleUpdate(BaseModel):
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    available_slots: int | None = None

@@ -15,6 +15,15 @@ import string
 import secrets
 from sqlalchemy.orm import selectinload
 import math
+from app.services import schedules_service
+async def increase_view(id: str, db: AsyncSession):
+    existed_items = await db.execute(select(tours.Tours).where(tours.Tours.id == id))
+    item = existed_items.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Tour not found")
+    item.views = item.views+1
+    await db.commit()
+    await db.refresh(item)
 
 
 async def create(data: tours.TourCreation,
@@ -27,6 +36,7 @@ async def create(data: tours.TourCreation,
         db.add(new_item)
         await db.commit()
         await db.refresh(new_item)
+        await schedules_service.auto_generate_schedules(new_item.id, datetime.now(), db=db)
         return new_item
     except IntegrityError:
         await db.rollback()
@@ -51,6 +61,7 @@ async def update(id:str, updateItem: tours.TourUpdate,
 
         await db.commit()
         await db.refresh(item)
+        
         return item
     except IntegrityError:
         await db.rollback()
@@ -59,10 +70,15 @@ async def update(id:str, updateItem: tours.TourUpdate,
 
 
 async def get_tours(filters: get_schema.GetSchema, db: AsyncSession):
-    stmt = select(tours.Tours).options(selectinload(tours.Tours.destination)).where(tours.Tours.status == tours.TourStatusEnum.DEFAULT)
+    stmt = select(tours.Tours).options(
+        selectinload(tours.Tours.destination),
+        selectinload(tours.Tours.schedules)
+    ).where(tours.Tours.status == tours.TourStatusEnum.DEFAULT)
 
     if filters.id:
         stmt = stmt.where(tours.Tours.id == filters.id)
+        await schedules_service.ensure_future_schedules(tour_id=filters.id, db=db)
+        await increase_view(filters.id, db)
 
     if filters.searchKeyword:
         keyword = f"%{filters.searchKeyword}%"
@@ -92,8 +108,10 @@ async def get_tours(filters: get_schema.GetSchema, db: AsyncSession):
     }
 
 async def get_disable_tours(filters: get_schema.GetSchema, db: AsyncSession):
-    stmt = select(tours.Tours).options(selectinload(tours.Tours.destination)).where(tours.Tours.status == tours.TourStatusEnum.DELETED)
-
+    stmt = select(tours.Tours).options(
+        selectinload(tours.Tours.destination),
+        selectinload(tours.Tours.schedules)
+    ).where(tours.Tours.status == tours.TourStatusEnum.DELETED)
     if filters.id:
         stmt = stmt.where(tours.Tours.id == filters.id)
 
@@ -128,10 +146,13 @@ async def get_disable_tours(filters: get_schema.GetSchema, db: AsyncSession):
 async def get_tours_by_destination_id(destination_id: int, filters: get_schema.ToursGetSchema, db: AsyncSession):
     base_stmt = select(tours.Tours).where(tours.Tours.destination_id == destination_id).where(
         tours.Tours.price.between(filters.priceFrom, filters.priceTo)
-    ).where(tours.Tours.status == tours.TourStatusEnum.DEFAULT)
+    ).where(tours.Tours.status == tours.TourStatusEnum.DEFAULT).options(
+        selectinload(tours.Tours.schedules)
+    )
 
     if filters.id:
         base_stmt = base_stmt.where(tours.Tours.id == filters.id)
+        await increase_view(filters.id, db)
 
     if filters.searchKeyword:
         keyword = f"%{filters.searchKeyword}%"

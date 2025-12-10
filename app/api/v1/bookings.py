@@ -20,10 +20,11 @@ async def get_db():
 @router.post("/create")
 async def booking_create(
     data: bookings.BookingsCreation, 
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(auth.verify_token_user)
 ):
     try:
-        result = await bookings_service.create(data=data,
+        result = await bookings_service.create(user_id=user_id,data=data,
             db=db
         )
         return result
@@ -76,8 +77,23 @@ async def get_bookings(
     result = await bookings_service.get(filters=filters, db=db)
     return result
 
+@router.post("/get-booking-rooms/{booking_id}")
+async def get(
+    booking_id: str,
+    filters: get_schema.GetSchema,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await bookings_service.get_booking_room(booking_id=booking_id, filters=filters, db=db)
+    return result
+
 
 @router.post("/paid/{pay_token}")
 async def paid_booking(pay_token: str, db: AsyncSession = Depends(get_db)):
     res = await bookings_service.paid(pay_token=pay_token, db=db)
+    return res
+
+
+@router.put("/cancel/{booking_id}")
+async def paid_booking(booking_id: str, user_id: str = Depends(auth.verify_token_user), db: AsyncSession = Depends(get_db)):
+    res = await bookings_service.cancel(booking_id=booking_id, user_id=user_id, db=db)
     return res

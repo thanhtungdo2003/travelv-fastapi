@@ -50,7 +50,7 @@ async def create_order(booking_id: str, user_id: str, db: AsyncSession):
             "intent": "CAPTURE",
             "purchase_units": [{"amount": {"currency_code": "USD", "value": f"{usd_amount:.2f}"}}],
             "application_context": {
-                "return_url": f"http://localhost:3000/paypal-success/{payment.create_order_token(booking_id=booking_id, a=booking.total_amount, user_id=user_id)}",
+                "return_url": f"http://localhost:3000/travelv-landingpage/paypal-success/{payment.create_order_token(booking_id=booking_id, a=booking.total_amount, user_id=user_id)}",
                 "cancel_url": "http://localhost:3000/"
             }
         }
