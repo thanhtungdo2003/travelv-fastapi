@@ -76,6 +76,7 @@ class UserUpdate(BaseModel):
     email: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
+    role: Optional[str] = None
 
 class UserUpdateByAdmin(BaseModel):
     role: Optional[str] = None

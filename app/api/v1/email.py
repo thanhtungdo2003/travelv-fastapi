@@ -69,7 +69,7 @@ async def send_email(email: str, background_tasks: BackgroundTasks, db: AsyncSes
         </div>
         
         <!-- Verification Button -->
-        <a href="http://localhost:3000/auth/verify-email/{auth.create_access_token(data={'name':'verify', 'email': email}, expires_delta=timedelta(minutes=15))}" 
+        <a href="http://localhost:3000/travelv-landingpage/auth/verify-email/{auth.create_access_token(data={'name':'verify', 'email': email}, expires_delta=timedelta(minutes=15))}" 
            style="display: inline-block; text-decoration: none; text-align: center;
                   width: 180px; padding: 12px 0; 
                   color: white; background-color: #3498DB; border-radius: 6px; 
