@@ -252,7 +252,7 @@ async def get_hotelroom_by_hotel_id(hotel_id: str, filters: get_schema.GetRoomSc
     offset = (page - 1) * row
     count_stmt = select(func.count()).select_from(base_stmt.subquery())
     total = (await db.execute(count_stmt)).scalar()
-    stmt = base_stmt.options(selectinload(hotelroom.HotelRooms.destination))
+    stmt = base_stmt.options(selectinload(hotelroom.HotelRooms.hotel))
     result = await db.execute(stmt.offset(offset).limit(row))
     data = result.unique().scalars().all()
 
